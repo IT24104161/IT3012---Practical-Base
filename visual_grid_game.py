@@ -1,6 +1,8 @@
 import random
 import tkinter as tk
 
+from agent import SearchAgent
+
 
 class VisualGridHuntGame:
     """Pacman-style grid environment with food, opponents and toxic traps."""
@@ -58,8 +60,12 @@ class VisualGridHuntGame:
             wall_ahead = True
 
         return {
+            "agent_pos": list(self.agent_pos),
             "food_here": (x, y) in self.food_positions,
-            "wall_ahead": wall_ahead
+            "wall_ahead": wall_ahead,
+            "grid_size": (self.width, self.height),
+            "walls": list(self.walls),
+            "all_food": list(self.food_positions)
         }
 
     def execute_action(self,action):
@@ -164,7 +170,7 @@ class GridGameGUI:
 
         self.env=VisualGridHuntGame(width,height,num_food,num_opponents,walls)
 
-        self.agent = SimpleReflexAgent()
+        self.agent = SearchAgent()
 
         self.cell_size=max(20,min(600//self.env.width,600//self.env.height))
 
