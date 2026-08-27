@@ -171,6 +171,7 @@ class GridGameGUI:
         self.env=VisualGridHuntGame(width,height,num_food,num_opponents,walls)
 
         self.agent = SearchAgent()
+        self.agent.active_algo = 'AStar'
 
         self.cell_size=max(20,min(600//self.env.width,600//self.env.height))
 

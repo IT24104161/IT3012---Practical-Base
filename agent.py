@@ -1,6 +1,7 @@
 import random
 from collections import deque
 import heapq
+import math
 
 class GreedyGridAgent:
 
@@ -75,6 +76,15 @@ class SearchAgent:
                 neighbors.append((next_state, action))
 
         return neighbors
+
+    def manhattan_distance(self, pos, goal):
+        return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
+
+    def euclidean_distance(self, pos, goal):
+        return math.sqrt(
+            (pos[0] - goal[0]) ** 2 +
+            (pos[1] - goal[1]) ** 2
+        )
 
     def reconstruct_path(self, parents, actions, goal):
 
@@ -235,6 +245,71 @@ class SearchAgent:
 
         return []
 
+    def astar_search(
+        self,
+        start_pos,
+        goal_pos,
+        walls,
+        grid_size,
+        heuristic_type='manhattan'
+    ):
+        if heuristic_type == 'manhattan':
+            heuristic = self.manhattan_distance
+        elif heuristic_type == 'euclidean':
+            heuristic = self.euclidean_distance
+        else:
+            raise ValueError(
+                "heuristic_type must be 'manhattan' or 'euclidean'"
+            )
+
+        frontier = []
+        counter = 0
+        start_h = heuristic(start_pos, goal_pos)
+        heapq.heappush(frontier, (start_h, 0, counter, start_pos, []))
+
+        reached_states = set()
+        best_costs = {start_pos: 0}
+
+        while frontier:
+            _, current_g, _, current_pos, path_taken = heapq.heappop(
+                frontier
+            )
+
+            if current_pos in reached_states:
+                continue
+
+            if current_pos == goal_pos:
+                return path_taken
+
+            reached_states.add(current_pos)
+
+            for next_pos, action in self.get_neighbors(
+                current_pos,
+                grid_size,
+                walls
+            ):
+                if next_pos in reached_states:
+                    continue
+
+                new_g = current_g + 1
+                if new_g < best_costs.get(next_pos, math.inf):
+                    best_costs[next_pos] = new_g
+                    new_h = heuristic(next_pos, goal_pos)
+                    new_f = new_g + new_h
+                    counter += 1
+                    heapq.heappush(
+                        frontier,
+                        (
+                            new_f,
+                            new_g,
+                            counter,
+                            next_pos,
+                            path_taken + [action]
+                        )
+                    )
+
+        return []
+
     def find_closest_food(self, start, food_positions):
 
         if not food_positions:
@@ -294,6 +369,14 @@ class SearchAgent:
             elif self.active_algo == 'UCS':
 
                 self.plan = self.ucs_search(
+                    start,
+                    goal,
+                    walls,
+                    grid_size
+                )
+
+            elif self.active_algo == 'AStar':
+                self.plan = self.astar_search(
                     start,
                     goal,
                     walls,
