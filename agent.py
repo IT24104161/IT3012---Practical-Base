@@ -2,6 +2,7 @@ import random
 from collections import deque
 import heapq
 import math
+from logic_engine import KnowledgeBase
 
 class GreedyGridAgent:
 
@@ -49,6 +50,35 @@ class SearchAgent:
     def __init__(self):
         self.plan = []
         self.active_algo = 'BFS'
+        self.kb = KnowledgeBase()
+        self.kb.tell_rule(
+            ['TargetVisible', 'HasDust'],
+            'SafeToEngage'
+        )
+        self.kb.tell_rule(
+            ['SafeToEngage', 'BloodseekerMissing'],
+            'Retreat'
+        )
+
+    def tile_is_feasible(self, tile, tile_percepts):
+        if tile_percepts is None:
+            return True
+
+        facts = (
+            tile_percepts(tile)
+            if callable(tile_percepts)
+            else tile_percepts.get(tile, ())
+        )
+        if facts is None:
+            facts = ()
+        if isinstance(facts, dict):
+            facts = (fact for fact, present in facts.items() if present)
+
+        self.kb.clear_facts()
+        for fact in facts:
+            self.kb.tell_fact(fact)
+        self.kb.forward_chain()
+        return 'Retreat' not in self.kb.facts
 
     def get_neighbors(self, state, grid_size, walls):
 
@@ -251,7 +281,8 @@ class SearchAgent:
         goal_pos,
         walls,
         grid_size,
-        heuristic_type='manhattan'
+        heuristic_type='manhattan',
+        tile_percepts=None
     ):
         if heuristic_type == 'manhattan':
             heuristic = self.manhattan_distance
@@ -289,6 +320,9 @@ class SearchAgent:
                 walls
             ):
                 if next_pos in reached_states:
+                    continue
+
+                if not self.tile_is_feasible(next_pos, tile_percepts):
                     continue
 
                 new_g = current_g + 1
@@ -380,7 +414,8 @@ class SearchAgent:
                     start,
                     goal,
                     walls,
-                    grid_size
+                    grid_size,
+                    tile_percepts=percept.get('tile_percepts')
                 )
 
         if self.plan:
